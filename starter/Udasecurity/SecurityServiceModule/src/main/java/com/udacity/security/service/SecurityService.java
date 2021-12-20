@@ -35,8 +35,13 @@ public class SecurityService {
      * @param armingStatus
      */
     public void setArmingStatus(ArmingStatus armingStatus) {
-        if(armingStatus == ArmingStatus.DISARMED) {
+        if (armingStatus == ArmingStatus.DISARMED) {
             setAlarmStatus(AlarmStatus.NO_ALARM);
+        }
+        if (   armingStatus == ArmingStatus.ARMED_HOME
+            || armingStatus == ArmingStatus.ARMED_AWAY
+        ) {
+            deactivateAllSensors();
         }
         securityRepository.setArmingStatus(armingStatus);
     }
@@ -49,11 +54,26 @@ public class SecurityService {
     private void catDetected(Boolean cat) {
         if(cat && getArmingStatus() == ArmingStatus.ARMED_HOME) {
             setAlarmStatus(AlarmStatus.ALARM);
-        } else {
+        } else if (!hasActiveSensors()){
             setAlarmStatus(AlarmStatus.NO_ALARM);
         }
 
         statusListeners.forEach(sl -> sl.catDetected(cat));
+    }
+
+    /**
+     * Method check if there are active sensors
+     */
+    public boolean hasActiveSensors() {
+        return getSensors().stream().filter(sensor -> sensor.getActive()).count() != 0;
+    }
+
+    /**
+     * Internal method deactivate all sensors
+     */
+    void deactivateAllSensors() {
+        getSensors().stream().forEach(
+            sensor -> changeSensorActivationStatus(sensor, false));
     }
 
     /**
@@ -96,7 +116,7 @@ public class SecurityService {
     private void handleSensorDeactivated() {
         switch(securityRepository.getAlarmStatus()) {
             case PENDING_ALARM -> setAlarmStatus(AlarmStatus.NO_ALARM);
-            case ALARM -> setAlarmStatus(AlarmStatus.PENDING_ALARM);
+            //case ALARM -> setAlarmStatus(AlarmStatus.PENDING_ALARM);
         }
     }
 
@@ -106,7 +126,9 @@ public class SecurityService {
      * @param active
      */
     public void changeSensorActivationStatus(Sensor sensor, Boolean active) {
-        if(!sensor.getActive() && active) {
+        if(  !sensor.getActive() && active
+          || sensor.getActive() && active
+        ) {
             handleSensorActivated();
         } else if (sensor.getActive() && !active) {
             handleSensorDeactivated();
