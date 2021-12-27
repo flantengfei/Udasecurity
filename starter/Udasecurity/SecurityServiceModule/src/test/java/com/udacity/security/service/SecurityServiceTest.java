@@ -8,15 +8,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
-import java.util.HashSet;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -134,14 +127,12 @@ public class SecurityServiceTest {
     @Order(10)
     @DisplayName("10. If the system is armed, reset all sensors to inactive.")
     public void systemArmed_setAllSensorsInactive() {
-        when(securityRepository.getSensors()).thenReturn(new HashSet<>());
-        securityService = spy(securityService);
         securityService.setArmingStatus(ArmingStatus.ARMED_HOME);
-        verify(securityService).deactivateAllSensors();
+        verify(securityRepository, times(1)).getSensors();
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     @DisplayName("11. If the system is armed-home while the camera shows a cat, " +
         "set the alarm status to alarm.")
     public void systemArmedHome_CatDetected_alarmIsActive() {
