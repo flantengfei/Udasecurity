@@ -7,8 +7,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
 
@@ -123,12 +131,23 @@ public class SecurityServiceTest {
         verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.NO_ALARM);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("systemArmingStatusProvider")
     @Order(10)
     @DisplayName("10. If the system is armed, reset all sensors to inactive.")
-    public void systemArmed_setAllSensorsInactive() {
-        securityService.setArmingStatus(ArmingStatus.ARMED_HOME);
+    public void systemArmed_setAllSensorsInactive(ArmingStatus armingStatus) {
+        Set<Sensor> sensorSet = new HashSet<>();
+        sensorSet.add(new Sensor("window1", SensorType.WINDOW));
+        when(securityRepository.getSensors()).thenReturn(sensorSet);
+        securityService.setArmingStatus(armingStatus);
         verify(securityRepository, times(1)).getSensors();
+    }
+
+    private static Stream<Arguments> systemArmingStatusProvider() {
+        return Stream.of(
+                Arguments.of(ArmingStatus.ARMED_HOME),
+                Arguments.of(ArmingStatus.ARMED_AWAY)
+        );
     }
 
     @Test

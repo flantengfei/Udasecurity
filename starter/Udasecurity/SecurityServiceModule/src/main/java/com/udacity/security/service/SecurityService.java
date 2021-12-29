@@ -72,7 +72,7 @@ public class SecurityService {
      * Internal method deactivate all sensors
      */
     void deactivateAllSensors() {
-        getSensors().stream().forEach(
+        getSensors().stream().toList().forEach(
             sensor -> changeSensorActivationStatus(sensor, false));
     }
 
