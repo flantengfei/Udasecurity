@@ -23,6 +23,7 @@ public class SecurityService {
     private FakeImageService imageService;
     private SecurityRepository securityRepository;
     private Set<StatusListener> statusListeners = new HashSet<>();
+    private boolean catHasDected = false;
 
     public SecurityService(SecurityRepository securityRepository, FakeImageService imageService) {
         this.securityRepository = securityRepository;
@@ -42,6 +43,9 @@ public class SecurityService {
             || armingStatus == ArmingStatus.ARMED_AWAY
         ) {
             deactivateAllSensors();
+            if (catHasDected) {
+                setAlarmStatus(AlarmStatus.ALARM);
+            }
         }
         securityRepository.setArmingStatus(armingStatus);
     }
@@ -74,6 +78,8 @@ public class SecurityService {
     void deactivateAllSensors() {
         getSensors().stream().toList().forEach(
             sensor -> changeSensorActivationStatus(sensor, false));
+        AlarmStatus status = securityRepository.getAlarmStatus();
+        statusListeners.forEach(sl -> sl.notify(status));
     }
 
     /**
@@ -143,7 +149,8 @@ public class SecurityService {
      * @param currentCameraImage
      */
     public void processImage(BufferedImage currentCameraImage) {
-        catDetected(imageService.imageContainsCat(currentCameraImage, 50.0f));
+        catHasDected = imageService.imageContainsCat(currentCameraImage, 50.0f);
+        catDetected(catHasDected);
     }
 
     public AlarmStatus getAlarmStatus() {
